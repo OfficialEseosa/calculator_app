@@ -90,17 +90,13 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _allClear();
       } else if (btn == 'DEL') {
         _handleDelete();
-      } else if (btn == '±') {
-        _handleToggleSign();
       } else if (btn == '%') {
         _handlePercent();
       } else if (_isOperator(btn)) {
         _handleOperator(btn);
-      } else if (btn == '.') {
-        _handleDecimal();
       } else if (btn == '=') {
         _handleEquals();
-      } else {
+      } else if (btn != '±' && btn != '.') {
         _handleDigit(btn);
       }
     });
@@ -199,9 +195,31 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     }
   }
 
+  bool _expressionEndsWithOperator() {
+    if (_expression.isEmpty) return false;
+    return _isOperator(_expression[_expression.length - 1]);
+  }
+
   void _handleOperator(String op) {
     if (_controller.text == 'Error') {
       _allClear();
+      return;
+    }
+
+    if (_expression.isEmpty || _expression == '0') {
+      _firstOperand = _expression.isEmpty ? '0' : _expression;
+      _expression = (_expression.isEmpty ? '0' : _expression) + op;
+      _controller.text = _expression;
+      _operator = op;
+      _shouldResetDisplay = true;
+      _calculated = false;
+      return;
+    }
+
+    if (_expressionEndsWithOperator()) {
+      _expression = _expression.substring(0, _expression.length - 1) + op;
+      _controller.text = _expression;
+      _operator = op;
       return;
     }
 
@@ -328,18 +346,20 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             ),
             itemCount: buttons.length,
             itemBuilder: (context, index) {
+              final btn = buttons[index];
+              final bool isDisabled = btn == '±' || btn == '.';
               return ElevatedButton(
-                onPressed: () => _handleButtonPress(buttons[index]),
-                child: buttons[index] == 'DEL'
+                onPressed: isDisabled ? null : () => _handleButtonPress(btn),
+                child: btn == 'DEL'
                     ? const Icon(Icons.backspace, size: 28)
                     : Text(
-                        buttons[index] == 'C'
+                        btn == 'C'
                             ? (_firstOperand.isNotEmpty ||
                                     _operator.isNotEmpty ||
                                     _controller.text != '0'
                                 ? 'AC'
                                 : 'C')
-                            : buttons[index],
+                            : btn,
                         style: const TextStyle(
                             fontSize: 28, fontWeight: FontWeight.bold),
                       ),
